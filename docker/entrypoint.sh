@@ -1,12 +1,5 @@
 #!/bin/bash
 
-#echo "export GH_CLIENT_ID=$GH_CLIENT_ID" >> /home/scala/.bashrc
-#echo "export GH_CLIENT_SECRET=$GH_CLIENT_SECRET" >> /home/scala/.bashrc
-
-#sudo usermod -u $(id -u) -g $(id -g) scala
-#shift 2
-#sudo -u scala "$@"
-
 if [ -z "${USER}" ]; then
     echo "ERROR: USER environment variable need to be set!"
     exit 100

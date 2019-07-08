@@ -20,12 +20,10 @@ if [ $# -lt 1 ]; then
 fi
 
 if [ -z $GH_CLIENT_ID ]; then
-    echo "WARN: GH_CLIENT_ID is not set"
     GH_CLIENT_ID=""
 fi
 
 if [ -z $GH_CLIENT_SECRET ]; then
-    echo "WARN: GH_CLIENT_SECRET is not set"
     GH_CLIENT_SECRET=""
 fi
 
@@ -64,6 +62,7 @@ docker run \
        -e SBT_REPOSITORIES_FILE=$SBT_REPOSITORIES_FILE \
        -e HOST_USER_ID=$(id -u) \
        -e HOST_USER_GID=$(id -g) \
+       -v $BASE_DIR/.git:$GUEST_BASE_DIR/.git \
        -v $BASE_DIR/$GLOBAL_IVY_DIR:$GUEST_BASE_DIR/.ivy2 \
        -v $BASE_DIR/$GLOBAL_SBT_DIR:$GUEST_BASE_DIR/.sbt \
        -v $BASE_DIR/$GLOBAL_SBT_BOOT_DIR:$GUEST_BASE_DIR/.sbt/boot \

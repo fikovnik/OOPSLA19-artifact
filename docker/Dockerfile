@@ -66,9 +66,6 @@ RUN groupadd --gid "${USER_GID}" "${USER}" && \
       ${USER} && \
     echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
-# Install latextags
-RUN Rscript -e 'devtools::install_github("fikovnik/latextags")'
-
 WORKDIR /home/scala
 
 ADD entrypoint.sh /entrypoint.sh

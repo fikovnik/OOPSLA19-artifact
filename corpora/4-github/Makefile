@@ -14,6 +14,8 @@ REMOTE := corpus-stage1.feather.gz \
 
 LOCAL := ${REMOTE:feather.gz=feather}
 
+SCRIPTS_DIR := ../../scala-implicits-analysis/scripts
+
 %.feather.gz:
 	curl --progress-bar -O $(BASE_URL)/$@
 
@@ -22,9 +24,14 @@ LOCAL := ${REMOTE:feather.gz=feather}
 
 .PHONY: all clean fetch
 
-all: fetch
+all: fetch report
 
 clean:
 	-rm -f $(REMOTE) $(LOCAL)
 
 fetch: $(LOCAL)
+
+%.html:
+	Rscript -e "rmarkdown::render('$(SCRIPTS_DIR)/analysis/${@:html=Rmd}', output_dir='$(CURDIR)', params=list(base_dir='$(CURDIR)', lib_dir='../inc'))"
+
+report: $(LOCAL) stage1-analysis.html stage3-analysis.html implicits-analysis.html

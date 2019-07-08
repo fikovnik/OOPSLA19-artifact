@@ -53,12 +53,20 @@ This guide was tried on Linux and OSX.
 
 1. Clone the analysis pipeline:
 
+   It is a separate open source project hosted on GitHub.
+
    ```{sh eval=FALSE}
    git clone --single-branch --branch oopsla19 https://github.com/PRL-PRG/scala-implicits-analysis
    ```
 
-   It is _important_ that you use =oopsla19= branch.
-   After clonning, the artifacts directory should look like:
+   It is _important_ that you use =oopsla19= branch:
+
+   ```{sh eval=FALSE}
+   git --git-dir=scala-implicits-analysis/.git branch
+   * oopsla19
+   ```
+
+   After cloning, the artifacts directory should look like:
 
    ```
    ├── corpora
@@ -100,6 +108,7 @@ This guide was tried on Linux and OSX.
    ```
 
    The `uid` and `gid` returned should be the same as are on your host system.
+   You can double check that by running `id -u` and `id -g`.
    This is important because while the commands will run in the docker image, they will modify the files in this directory.
    If the `uid` or `gid` are different it will be inconvenient for you to view the results and remove them at the end.
 
@@ -126,7 +135,7 @@ This guide was tried on Linux and OSX.
    To build these tools, run the following:
 
    ```{sh eval=FALSE}
-   ./run.sh -C scala-implicits-analysis
+   ./run.sh make -C scala-implicits-analysis
    ```
 
 1. Run the pipeline on a single project corpus
@@ -150,6 +159,31 @@ This guide was tried on Linux and OSX.
    ```
 
    The `stage*-analysis.html` describes the state of the corpus while the `implicits-analysis.html` summarizes the extracted implicits. The details of what to expect in each of these files follow in the part 2 of this artifact.
+
+## Part 1
+
+## Part 2
+
+### Note about concurrency
+
+## Part 3
+
+The corpus of all the GitHub Scala projects is available on server at:
+
+```
+http://prl1.ele.fit.cvut.cz:8149/github
+```
+
+If you are concerned about privacy you can access it via a VPN service or TOR although we do not keep any access logs.
+
+The reason why do not create an archive of it is its size:
+
+1. The cache similar to what we have used in this artifact has 110GB:
+   - 29GB  `cache/coursier`
+   - 79GB  `cache/ivy`
+   -  2GB `cache/sbt/sbt-boot`
+
+2. The corpus itself has 1.1TB.
 
 ## Building image locally
 <a name="#building-image-locally"/>
@@ -194,3 +228,8 @@ What has worked all the time was simply repeating the image build process by rer
 ### Error: A compilation error `Caused by: scala.reflect.internal.MissingRequirementError: object scala in compiler mirror not found.`
 
 Rebuild [BuildInfo](scala-implicits-analysis/libs/tools/target/scala-2.12/src_managed/main/sbt-buildinfo/BuildInfo.scala) file by deleting the file and running `./run.sh make -C scala-implicits-analysis/libs`.
+
+### Out of memory exception
+
+Compiling Scala projects can be rather expensive.
+TODO:

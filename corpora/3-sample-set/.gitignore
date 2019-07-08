@@ -1,0 +1,11 @@
+# ignore everything
+*
+
+# but these files
+!.gitignore
+!all-projects.txt
+!all-projects-patch.csv
+!Makefile
+!projects-github-info.csv.pinned
+!scaladex.txt.pinned
+

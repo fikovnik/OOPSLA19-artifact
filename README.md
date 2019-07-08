@@ -107,10 +107,10 @@ we have added at the end. This guide was tested on Linux and OSX.
     the cache will speed things up. The download size is 2.6GB.
     
     ``` sh
-    curl -O cache.tar.xz https://owncloud.cesnet.cz/index.php/s/hUbBGxG2cgih4h9/download
+    curl -o cache.tar.xz https://owncloud.cesnet.cz/index.php/s/hUbBGxG2cgih4h9/download
     ```
     
-    The MD5SUM is `sh md5sum cache.tar.xz`.
+    The MD5SUM is `b25a4533a3c833e689827a15a3600918`.
     
     ``` sh
     tar xfvJ cache.tar.xz
@@ -137,54 +137,52 @@ we have added at the end. This guide was tested on Linux and OSX.
     `3-sample-set` corpora). The projects are already built. Please not
     that the rest of the pipeline still needs to be run, it is only the
     project building that will be skipped. The download size is 500MB.
+    
+    ``` sh
+    curl -o corpora.tar.xz https://owncloud.cesnet.cz/index.php/s/tI7FIxneRjSjSMW/download
+    ```
+    
+    The MD5SUM is `729bc166e24c08ef116d4c9bee713c73`.
+    
+    ``` sh
+    tar xfvJ corpora.tar.xz
+    ```
+    
+    After downloading and extracting it should look like:
+    
+        ├── cache
+        │   └── ...
+        ├── corpora
+        │   ├── 1-example
+        │   │   └── ...
+        │   ├── 2-single
+        │   │   ├── all-projects   -- includes the built projects
+        │   │   └── ...
+        │   ├── 3-sample-set
+        │   │   ├── all-projects   -- includes the built projects
+        │   │   └── ...
+        │   └── 4-github
+        │       └── ...
+        ├── docker
+        │   └── ...
+        ├── scala-implicits-analysis
+        │   └── ...
+        └── ...
 
-<!-- end list -->
-
-``` sh
-   curl -O corpora.tar.xz https://owncloud.cesnet.cz/index.php/s/tI7FIxneRjSjSMW/download
-```
-
-The MD5SUM is `sh md5sum corpora.tar.xz`.
-
-``` sh
-tar xfvJ corpora.tar.xz
-```
-
-After downloading and extracting it should look like:
-
-    ├── cache
-    │   └── ...
-    ├── corpora
-    │   ├── 1-example
-    │   │   └── ...
-    │   ├── 2-single
-    │   │   ├── all-projects   -- includes the built projects
-    │   │   └── ...
-    │   ├── 3-sample-set
-    │   │   ├── all-projects   -- includes the built projects
-    │   │   └── ...
-    │   └── 4-github
-    │       └── ...
-    ├── docker
-    │   └── ...
-    ├── scala-implicits-analysis
-    │   └── ...
-    └── ...
-
-1.  Make sure you have a docker installed and running
+5.  Make sure you have a docker installed and running
     
     ``` sh
     docker run --rm hello-world
     ```
 
-2.  Pull the docker image (or <a href="#building-image-locally">build
+6.  Pull the docker image (or <a href="#building-image-locally">build
     one locally</a>)
     
     ``` sh
     docker pull prlprg/oopsla19-scala
     ```
 
-3.  Check that the image can be run
+7.  Check that the image can be run
     
     The image needs a number of directories and environment variables
     set which would make it cumbersome to provide each time. There is a
@@ -210,7 +208,7 @@ After downloading and extracting it should look like:
     This can be ignored (most likely you are on OSX which assigns lower
     GID to the user group).
 
-4.  Build the pipeline
+8.  Build the pipeline
     
     The pipeline consists of the following tools:
     
@@ -229,7 +227,7 @@ After downloading and extracting it should look like:
     ./run.sh make -C scala-implicits-analysis
     ```
 
-5.  Run the pipeline on a single project corpus
+9.  Run the pipeline on a single project corpus
     
     We will run the pipeline on a corpus that contains only one, yet
     real Scala project. The corpus is located in `corpora/2-single`
@@ -239,7 +237,7 @@ After downloading and extracting it should look like:
     ./run.sh make -C corpora/2-single
     ```
 
-6.  Check the results
+10. Check the results
     
     After the make is done, there should be three HTML files in the
     corpus directory:
@@ -263,9 +261,24 @@ This concludes the getting started guide.
 
 ## Part 1
 
+\*\* MERGING semanticdbs from: /home/scala/corpora/1-example \*\* MERGED
+(1,53,7,17) into /home/scala/corpora/1-example/*analysis*/semanticdb.bin
+
+metadata-cleanpaths.csv metadata-dependencies.csv metadata-modules.csv
+metadata-sourcepaths.csv semanticdb-stats.csv semanticdb.bin
+
+make implicits amm
+../../scala-implicits-analysis/scripts/extract-implicits.sc Compiling
+/home/scala/scala-implicits-analysis/scripts/extract-implicits.sc 115,
+6, 3, 10, 0, 5, 0
+
+implicits-exceptions.csv implicits-stats.csv implicits.bin
+
 ## Part 2
 
 ### A note about concurrency
+
+TODO: note on parallelism corpora/3-sample-set/jobsfile.txt
 
 ## Part 3
 
@@ -337,6 +350,20 @@ scala-implicits-analysis/libs`.
 
 ### Out of memory exception
 
-Compiling Scala projects can be rather expensive. TODO:
+Compiling Scala projects can be rather expensive, especially for larger
+projects. In `scala-implicits-analysis/Makevars` you can adjust:
 
-TODO: note on parallelism corpora/3-sample-set/jobsfile.txt
+  - `SBT_MEM ?= 8192` the `-Xmx` memory for running SBT
+  - `MAX_MEM ?= 8192` the `-Xmx` memory for running ammonite (the `.sc`
+    scripts)
+  - `N_JOBS ?= 1` the number of projects processed in parallel
+
+The default is 8GB.
+
+### Timeout
+
+In case the compilation, metadata extraction, semanticdb generation or
+implicit extraction timeouts, you can try increasing the timeout for
+parallel taks by setting the `TIMEOUT` environment variable inside the
+docker container or in the `scala-implicits-analysis/Makevars`. The
+default is 30 minutes.

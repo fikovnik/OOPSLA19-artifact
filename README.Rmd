@@ -558,6 +558,7 @@ and then running the same reports:
 Please keep in mind that you will need plenty of RAM to load all the data into memory for R to process them.
 It is possible to fit it into 16GB RAM if most of it is free.
 If this is not feasible you can check the generated files directly:
+
 - [stage1-analysis.html](http://prl1.ele.fit.cvut.cz:8149/github/stage1-analysis.html)
 - [stage3-analysis.html](http://prl1.ele.fit.cvut.cz:8149/github/stage3-analysis.html)
 - [implicits-analysis.html](http://prl1.ele.fit.cvut.cz:8149/github/implicits-analysis.html)

@@ -81,6 +81,9 @@ we have added at the end. This guide was tested on Linux and OSX.
     * oopsla19
     ```
     
+    We used the `3004cf4ff55df52ae34a3c33bcc6100fafc4e9a4` commit for
+    creating this guide.
+    
     After cloning, the artifacts directory should look like:
     
         ├── corpora
@@ -425,14 +428,14 @@ Following are the some of the results to be checked.
     ./run.sh Rscript -e 'glue::glue_data(readr::read_csv("corpora/1-example/implicit-conversions.csv"), "- `{declaration_id}`: `{from}` => `{to}`")'
     ```
     
-      - `org/scalatest/Matchers#convertToStringShouldWrapper().`:
-        `java/lang/String#` =\>
-        `org/scalatest/Matchers#StringShouldWrapper#`
-      - `example/Conversion.XtensionJson().`:
-        `example/Conversion.XtensionJson().[T]` =\>
-        `example/Conversion.XtensionJson#[example/Conversion.XtensionJson().[T]]`
-      - `example/Cards.iToC().`: `scala/Int#` =\> `example/Cards.Card#`
-      - `example/Cards.dk.`: `scala/Int#` =\> `example/Cards.Card#`
+      - `org/scalatest/Matchers#convertToStringShouldWrapper().:
+        java/lang/String# =>
+        org/scalatest/Matchers#StringShouldWrapper#`
+      - `example/Conversion.XtensionJson().:
+        example/Conversion.XtensionJson().[T] =>
+        example/Conversion.XtensionJson#[example/Conversion.XtensionJson().[T]]`
+      - `example/Cards.iToC().: scala/Int# => example/Cards.Card#`
+      - `example/Cards.dk.: scala/Int# => example/Cards.Card#`
     
     This correctly identify the `implcit val dk = List(...)` as implicit
     conversion as indeed `List[T]` is of a functional type
@@ -491,9 +494,100 @@ To get more ideas what to query, please consult the
 
 ## Part 2
 
+The second part of the artifact will demonstrate the analysis pipeline
+on a sample set of Scala projects. This set has been created randomly
+from the entire corpus we have analyzed for the paper using the
+following
+[script](https://github.com/PRL-PRG/scala-implicits-analysis/blob/oopsla19/scripts/analysis/random-github-projects.Rmd).
+
+### Overview of the pipeline
+
+  - Stage 1:
+    
+    1.  create `all-projects.txt` that contains a new-line separated
+        list of project\_id (`<github-user-name>--<github-repo-name>`)
+        (`status=0`),
+    2.  download projects into `all-projects` folder and optionally
+        patch them with information in `all-projects-patches.csv`
+        (`status=1`),
+    3.  extract `repo-metadata.csv` that contains basic metadata about
+        the repository including scala lines of code, build system and
+        optionally SBT version,
+    4.  filter non-empty and SBT compatible projects (projects using SBT
+        \>= 0.13.5 or 1.0) (`status=2`),
+    5.  fetch information from GitHub about all the SBT projects
+    6.  run dejavu
+    7.  create `corpus-stage1.csv` summary
+    8.  run the `stage1-analysis.Rmd` to produce the `projects.txt` file
+
+  - Stage 2:
+    
+    9.  compile all projects
+    10. extract SBT metadata for each project
+    11. extract semanticdb for each project
+
+  - Stage3:
+    
+    10. extract implicits for each project
+    11. merge all the results
+    12. export implicits into CSV files
+    13. create `corpus-stage3.csv` summary
+    14. run the `stage3-analysis.Rmd`
+
+All these tasks are run from a `Makefile.corpus` makefile.
+
+### Running the pipeline
+
+``` sh
+./run.sh make -C corpora/3-sample-set
+```
+
+### Results
+
+Once the analysis is complete it should generate three HTML files:
+
+  - `stage1-analysis.html`
+  - `stage3-analysis.html`
+  - `implicits-analysis.html`
+
+They are the results of running the following Rmd notebooks:
+
+  - [stage1-analysis.Rmd](https://github.com/PRL-PRG/scala-implicits-analysis/blob/oopsla19/scripts/analysis/stage1-analysis.Rmd)
+  - [stage3-analysis.Rmd](https://github.com/PRL-PRG/scala-implicits-analysis/blob/oopsla19/scripts/analysis/stage3-analysis.Rmd)
+  - [implicits-analysis.Rmd](https://github.com/PRL-PRG/scala-implicits-analysis/blob/oopsla19/scripts/analysis/implicits-analysis.Rmd)
+
+The first two provide an overview of the corpus and were used of Section
+4 of the paper as well as for Figure 4. The last one summarizes the
+extracted implicits which was used to compose Section 5 and Figures 5
+and 6.
+
+### Custom corpus
+
+You are welcome to try it on your favorite Scala projects. To create a
+new corpus, simply create a new directory in `corpra` and do the
+following:
+
+``` sh
+mkdir corpora/5-my-corpus
+cd corpora/5-my-corpus
+ln -s ../../scala-implicits-analysis/Makefile.corpus Makefile
+ln -s ../../scala-implicits-analysis/all-projects-patch.csv .
+cp ../2-single/{projects-github-info.csv.pinned,scaladex.txt.pinned} .
+```
+
+Then create `all-projects.txt` file and put there the names of projects
+in the `<gh-owner>--<repo-name>` format separated by new lines.
+
 ### A note about concurrency
 
-TODO: note on parallelism corpora/3-sample-set/jobsfile.txt
+The pipeline is meant to be run in parallel. The `N_JOBS` variable
+controls the number of parallel jobs spawned by GNU parallel. While the
+jobs are running, the level of parallelism can be controlled by
+`jobsfile.txt` in the root of each corpus
+(e.g. `corpora/3-sample-set/jobsfile.txt`). However, please keep in
+mind that compiling Scala code is resource intensive. On as 72 core
+Intel Xeon 6140 @ 2.60GHz with 256GB RAM we managed to get \~12 projects
+compiling in parallel before saturation.
 
 ## Part 3
 
@@ -533,7 +627,13 @@ and then running the same reports:
 
 Please keep in mind that you will need plenty of RAM to load all the
 data into memory for R to process them. It is possible to fit it into
-16GB RAM if most of it is free.
+16GB RAM if most of it is free. If this is not feasible you can check
+the generated files directly: -
+[stage1-analysis.html](http://prl1.ele.fit.cvut.cz:8149/github/stage1-analysis.html)
+-
+[stage3-analysis.html](http://prl1.ele.fit.cvut.cz:8149/github/stage3-analysis.html)
+-
+[implicits-analysis.html](http://prl1.ele.fit.cvut.cz:8149/github/implicits-analysis.html)
 
 ## Building image locally
 

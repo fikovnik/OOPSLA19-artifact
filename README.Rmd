@@ -76,7 +76,7 @@ This guide was tested on Linux and OSX.
    * oopsla19
    ```
 
-   We used the `3004cf4ff55df52ae34a3c33bcc6100fafc4e9a4` commit for creating this guide.
+   We used the `86993ced4202fab6ea28674894df07a43e3b0341` commit for creating this guide.
 
    After cloning, the artifacts directory should look like:
 
@@ -103,13 +103,13 @@ This guide was tested on Linux and OSX.
    The download size is 2.6GB.
 
    ```{sh eval=FALSE}
-   curl -o cache.tar.xz https://owncloud.cesnet.cz/index.php/s/hUbBGxG2cgih4h9/download
+   curl -o cache.tar http://prl1.ele.fit.cvut.cz:8149/OOPSLA19-artifact/cache.tar
    ```
 
-   The MD5SUM is `b25a4533a3c833e689827a15a3600918`.
+   The MD5SUM is `09758c25cd629efd3c3ea98203b06be5`.
 
    ```{sh eval=FALSE}
-   tar xfvJ cache.tar.xz
+   tar xf cache.tar
    ```
 
    After downloading and extracting it should look like:
@@ -136,13 +136,13 @@ This guide was tested on Linux and OSX.
    The download size is 500MB.
 
    ```{sh eval=FALSE}
-   curl -o corpora.tar.xz https://owncloud.cesnet.cz/index.php/s/tI7FIxneRjSjSMW/download
+   curl -o corpora.tar http://prl1.ele.fit.cvut.cz:8149/OOPSLA19-artifact/corpora.tar
    ```
 
-   The MD5SUM is `729bc166e24c08ef116d4c9bee713c73`.
+   The MD5SUM is `665103ac1637be3acc70aecca13441d5`.
 
    ```{sh eval=FALSE}
-   tar xfvJ corpora.tar.xz
+   tar xf corpora.tar
    ```
 
    After downloading and extracting it should look like:
@@ -298,7 +298,7 @@ The `conversion` module has three files:
   }
   ```
 
-- `corpora/1-example/conversion/src/main/scala/example/Cards.scala`: an example for Figure 1 from the paper:
+- `corpora/1-example/conversion/src/main/scala/example/Cards.scala`: the example in Figure 1 in the paper:
 
   ```scala
   // When run, it should throw java.lang.IndexOutOfBoundsException: 1
@@ -313,6 +313,8 @@ The `conversion` module has three files:
     1.isInDeck
   }
   ```
+
+  The `Cards` objects defines two implicit conversions (`dk` and `iToC`) from `Int` to `Card`.
 
 ### Extracting implicits
 
@@ -339,7 +341,7 @@ In `_analysis_`:
 - `semanticdb.bin`            -- merged semanticdb files
 - `implicits.bin`             -- extracted implicits in google protocol buffer format following our [model](https://github.com/PRL-PRG/scala-implicits-analysis/blob/master/libs/model/src/main/protobuf/model.proto)
 - `implicits-stats.csv`       -- stats about how many implicits were extracted
-- ``implicits-exceptions.csv` -- problems encountered when extracting implicits
+- `implicits-exceptions.csv`  -- problems encountered when extracting implicits
 
 In root:
 
@@ -356,12 +358,18 @@ Following are some of the results to be checked.
 
    ```{sh eval=FALSE}
    wc -l corpora/1-example/*-problems.csv corpora/1-example/_analysis_/implicits-exceptions.csv
+   ```
+
+   should output:
+
+   ```
    1 implicit-callsites-problems.csv
    1 implicit-conversions-problems.csv
    1 implicit-declarations-problems.csv
    1 implicit-parameters-problems.csv
    1 _analysis_/implicits-exceptions.csv
    ```
+
    Note:
    - they should contain 1 line - the CSV header
 
@@ -498,6 +506,7 @@ The pipeline consists of 3 stages:
    1. extract implicits for each project
    1. merge all the results
    1. export implicits into CSV files
+   1. convert CSV files into [feather](https://github.com/wesm/feather) format (loading large CSV in R is slow).
    1. create `corpus-stage3.csv` summary
    1. run the `stage3-analysis.Rmd` report
    1. run the `implicits-analysis.Rmd` report

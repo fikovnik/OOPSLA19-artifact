@@ -81,13 +81,13 @@ we have added at the end. This guide was tested on Linux and OSX.
     * oopsla19
     ```
     
-    We used the `3004cf4ff55df52ae34a3c33bcc6100fafc4e9a4` commit for
+    We used the `86993ced4202fab6ea28674894df07a43e3b0341` commit for
     creating this guide.
     
     After cloning, the artifacts directory should look like:
     
         ├── corpora
-        │   ├── 1-example            -- an example project to demonstrate implciti extraction
+        │   ├── 1-example            -- an example project to demonstrate implicit extraction
         │   ├── 2-single             -- a single real-world Scala project to check the pipeline
         │   ├── 3-sample-set         -- a sample set of random Scala projects
         │   └── 4-github             -- placeholder for the entire analyzed repository (not downloaded yet)
@@ -110,13 +110,13 @@ we have added at the end. This guide was tested on Linux and OSX.
     the cache will speed things up. The download size is 2.6GB.
     
     ``` sh
-    curl -o cache.tar.xz https://owncloud.cesnet.cz/index.php/s/hUbBGxG2cgih4h9/download
+    curl -o cache.tar http://prl1.ele.fit.cvut.cz:8149/OOPSLA19-artifact/cache.tar
     ```
     
-    The MD5SUM is `b25a4533a3c833e689827a15a3600918`.
+    The MD5SUM is `09758c25cd629efd3c3ea98203b06be5`.
     
     ``` sh
-    tar xfvJ cache.tar.xz
+    tar xf cache.tar
     ```
     
     After downloading and extracting it should look like:
@@ -142,13 +142,13 @@ we have added at the end. This guide was tested on Linux and OSX.
     project building that will be skipped. The download size is 500MB.
     
     ``` sh
-    curl -o corpora.tar.xz https://owncloud.cesnet.cz/index.php/s/tI7FIxneRjSjSMW/download
+    curl -o corpora.tar http://prl1.ele.fit.cvut.cz:8149/OOPSLA19-artifact/corpora.tar
     ```
     
-    The MD5SUM is `729bc166e24c08ef116d4c9bee713c73`.
+    The MD5SUM is `665103ac1637be3acc70aecca13441d5`.
     
     ``` sh
-    tar xfvJ corpora.tar.xz
+    tar xf corpora.tar
     ```
     
     After downloading and extracting it should look like:
@@ -326,7 +326,7 @@ The `conversion` module has three files:
     ```
 
   - `corpora/1-example/conversion/src/main/scala/example/Cards.scala`:
-    an example for Figure 1 from the paper:
+    the example in Figure 1 in the paper:
     
     ``` scala
     // When run, it should throw java.lang.IndexOutOfBoundsException: 1
@@ -341,6 +341,9 @@ The `conversion` module has three files:
       1.isInDeck
     }
     ```
+    
+    The `Cards` objects defines two implicit conversions (`dk` and
+    `iToC`) from `Int` to `Card`.
 
 ### Extracting implicits
 
@@ -375,7 +378,7 @@ In `_analysis_`:
     [model](https://github.com/PRL-PRG/scala-implicits-analysis/blob/master/libs/model/src/main/protobuf/model.proto)
   - `implicits-stats.csv` – stats about how many implicits were
     extracted
-  - \``implicits-exceptions.csv` – problems encountered when extracting
+  - `implicits-exceptions.csv` – problems encountered when extracting
     implicits
 
 In root:
@@ -387,19 +390,22 @@ In root:
 
 ### Checking the results
 
-Following are the some of the results to be checked.
+Following are some of the results to be checked.
 
 1.  All the `*-problems.csv` files should be empty as weel as
     `_analysis_/implicits-exceptions.csv`:
     
     ``` sh
     wc -l corpora/1-example/*-problems.csv corpora/1-example/_analysis_/implicits-exceptions.csv
-    1 implicit-callsites-problems.csv
-    1 implicit-conversions-problems.csv
-    1 implicit-declarations-problems.csv
-    1 implicit-parameters-problems.csv
-    1 _analysis_/implicits-exceptions.csv
     ```
+    
+    should output:
+    
+        1 implicit-callsites-problems.csv
+        1 implicit-conversions-problems.csv
+        1 implicit-declarations-problems.csv
+        1 implicit-parameters-problems.csv
+        1 _analysis_/implicits-exceptions.csv
     
     Note:
     
@@ -439,8 +445,8 @@ Following are the some of the results to be checked.
       - `example/Cards.iToC().: scala/Int# => example/Cards.Card#`
       - `example/Cards.dk.: scala/Int# => example/Cards.Card#`
     
-    This correctly identify the `implcit val dk = List(...)` as implicit
-    conversion as indeed `List[T]` is of a functional type
+    This correctly identify the `implicit val dk = List(...)` as
+    implicit conversion as indeed `List[T]` is of a functional type
     `Function1[Int, T]`.
 
 4.  There should be 5 implicit parameters:
@@ -466,14 +472,14 @@ REPL using ammonite:
 ./run.sh -C corpora/1-example console
 ```
 
-This starts a Scala REPL and provide a function that can load the
-`implcits.bin` file:
+This starts a Scala REPL and provides a function that can load the
+`implicits.bin` file:
 
 ``` scala
 @ val project = loadImplicits("_analysis_/implicits.bin")
 ```
 
-For example, to get the declarations of the implcit call sites:
+For example, to get the declarations of the implicit call sites:
 
 ``` scala
 @ project.implicitCallSites.map(_.declarationId)
@@ -564,8 +570,8 @@ compiling each project three times. This is inevitable since getting
 full project dependencies from SBT triggers a full build so does
 generating the semanticdb. Also, this has been the hardest part to
 parallelize because SBT and Ivy do create global locks. For each project
-we therefore have to create a separate separate SBT and Ivy cache which
-are then linked into a global one.
+we therefore have to create a separate SBT and Ivy cache which are then
+linked into a global one.
 
 The summaries of each step is recorded in both a log file as well as a
 CSV files which are then merged together allowing one to analyze the
@@ -585,9 +591,11 @@ and runs the reports.
 1.  extract implicits for each project
 2.  merge all the results
 3.  export implicits into CSV files
-4.  create `corpus-stage3.csv` summary
-5.  run the `stage3-analysis.Rmd` report
-6.  run the `implicits-analysis.Rmd` report
+4.  convert CSV files into [feather](https://github.com/wesm/feather)
+    format (loading large CSV in R is slow).
+5.  create `corpus-stage3.csv` summary
+6.  run the `stage3-analysis.Rmd` report
+7.  run the `implicits-analysis.Rmd` report
 
 The entire pipeline is implemented in a number of bash, R and Scala (via
 [Ammonite](http://ammonite.io/#ScalaScripts)) scripts. It is

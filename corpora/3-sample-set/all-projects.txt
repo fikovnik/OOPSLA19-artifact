@@ -1,3 +1,4 @@
+abesto--zipkin-mongodb
 aboutastone--kmeans
 adaptorel--oauthorize
 akshaal--akmacros-json
@@ -12,7 +13,6 @@ Fellowship-of-the-Bus--lib
 frtrotta--scalashop
 GiGurra--Wall-Ace
 gphat--emperor
-hmrc--pbik-frontend
 hpe-cct--cct-sandbox
 inoio--simplez
 jamiecuthill--forcomp

@@ -1,8 +1,10 @@
+*.csv
 .cache
 .history
 .idea/
 .lib/
 _analysis_/
+_ivy_/
 lib_managed/
 project/boot/
 project/plugins/project/

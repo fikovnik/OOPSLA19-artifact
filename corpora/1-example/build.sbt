@@ -5,17 +5,15 @@ lazy val commonSettings = Seq(
 )
 
 lazy val root = (project in file("."))
-  .aggregate(typeclass)
+  .aggregate(typeclass, conversion)
   .settings(commonSettings)
 
 lazy val typeclass = (project in file("typeclass"))
   .settings(commonSettings)
 
-lazy val context = (project in file("context"))
-  .settings(commonSettings)
-
 lazy val conversion = (project in file("conversion"))
   .settings(commonSettings)
+  .dependsOn(typeclass)
   .settings(
     libraryDependencies +=  "org.scalatest" %% "scalatest" % "3.2.0-SNAP10" % Test,
     libraryDependencies +=  "org.scalacheck" %% "scalacheck" % "1.13.5" % Test,

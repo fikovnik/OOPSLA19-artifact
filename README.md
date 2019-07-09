@@ -12,17 +12,17 @@ OOPSLA 2019. The aim is to:
 3.  make available the large corpus of Scala projects used for the
     paper.
 
-The artifact is composed of 3 two parts. First part uses an example
-Scala project to show an implicit extraction and an overview of the
-underlying model. Second part demonstrates the analysis on a set of 50
-randomly selected Scala projects. Finally, the third part will look at
-the results of the analysis pipeline on the corpus used for paper.
+The artifact is composed of 3 parts. First part uses an example Scala
+project to show an implicit extraction and an overview of the underlying
+model. Second part demonstrates the analysis on a set of 50 randomly
+selected Scala projects. Finally, the third part will look at the
+results of the analysis pipeline on the corpus used for paper.
 
 ## Requirements
 
 The pipeline depends on a number of tools. The full requirements are
 listed in the documentation of the [analysis pipeline
-itself](https://github.com/PRL-PRG/scala-implicits-analysis/tree/oopsla19#requirementsalysis/).
+itself](https://github.com/PRL-PRG/scala-implicits-analysis/tree/oopsla19#requirements)
 To make it more convenient we have build a docker image that has all
 these dependencies installed. The image is available on [Docker
 HUB](https://hub.docker.com/r/prlprg/oopsla19-scala). This image can be
@@ -216,7 +216,6 @@ we have added at the end. This guide was tested on Linux and OSX.
         commands for metadata extraction and semanticdb generation.
       - libs - the model of implicits, the implicit extractor and a
         number of tools that export the results into CSV files.
-      - scripts/analysis - R notebooks containing data analysis
       - scripts/tools - a modified version of
         [Dejavu](https://github.com/PRL-PRG/dejavu-artifact) allowing to
         index Scala files.
@@ -261,18 +260,234 @@ This concludes the getting started guide.
 
 ## Part 1
 
-\*\* MERGING semanticdbs from: /home/scala/corpora/1-example \*\* MERGED
-(1,53,7,17) into /home/scala/corpora/1-example/*analysis*/semanticdb.bin
+In this part we will show the implicit extractor on a simple Scala
+project that is in `corpora/1-example`.
 
-metadata-cleanpaths.csv metadata-dependencies.csv metadata-modules.csv
-metadata-sourcepaths.csv semanticdb-stats.csv semanticdb.bin
+### Overview of the project
 
-make implicits amm
-../../scala-implicits-analysis/scripts/extract-implicits.sc Compiling
-/home/scala/scala-implicits-analysis/scripts/extract-implicits.sc 115,
-6, 3, 10, 0, 5, 0
+The project has two modules: `typeclass` and `conversion`. The
+`typeclass` module has just source file:
 
-implicits-exceptions.csv implicits-stats.csv implicits.bin
+  - `corpora/1-example/typeclass/src/main/scala/example/TypeClass.scala`:
+    defines a type class `Jsonable[T]` together with two instances:
+    `intJsonable` (for integers) and `seqJsonable` (for sequences of
+    `Jsonable[T])` and a function `asJson` which for a given type `T`,
+    for which there exists an instance of `Jsonable[T]` type class,
+    produces a JSON string:
+    
+    ``` scala
+    // type class
+    trait Jsonable[T] {
+      def toJson(x: T): String
+    }
+    
+    // an instance of the type class for `Int`
+    implicit val intJsonable = new Jsonable[Int] {
+      def toJson(x: Int): String = x.toString
+    }
+    
+    // an implicit type class derivation method which based on an instance of `Jsonable[T]`
+    // derives a type class that works for `Jsonable[Seq[T]]`
+    implicit def seqJsonable[T: Jsonable] = new Jsonable[Seq[T]] {
+      def toJson(xs: Seq[T]): String = {
+        xs.map(asJson(_)).mkString("[", ",", "]")
+      }
+    }
+    
+    // this is a function using the `Jsonable` type class
+    def asJson[T](x: T)(implicit tc: Jsonable[T]): String = {
+      tc.toJson(x)
+    }
+    ```
+
+The `conversion` module has three files:
+
+  - `corpora/1-example/conversion/src/main/scala/example/Conversion.scala`:
+    defines an extension method that for any given type `T` for which
+    there exists an instance of `Jsonable[T]` type class, defines a
+    `toJson` method:
+    
+    ``` scala
+    implicit class XtensionJson[T: Jsonable](x: T) {
+      def toJson: String = implicitly[Jsonable[T]].toJson(x)
+    }
+    ```
+
+  - `corpora/1-example/conversion/src/test/scala/example/ConversionTest.scala`:
+    a test for the extension method using scala-test:
+    
+    ``` scala
+    test("JSON conversion should convert a sequence of integers") {
+      Seq(1,2,3).toJson shouldBe "[1,2,3]"
+    }
+    ```
+
+  - `corpora/1-example/conversion/src/main/scala/example/Cards.scala`:
+    an example for Figure 1 from the paper:
+    
+    ``` scala
+    // When run, it should throw java.lang.IndexOutOfBoundsException: 1
+    object Cards extends App {
+      case class Card(n: Int, suit: String = "club") {
+        def isInDeck(implicit deck: List[Card]) = deck contains this
+      }
+    
+      implicit val dk = List(Card(1))
+      implicit def iToC(n: Int) = Card(n)
+    
+      1.isInDeck
+    }
+    ```
+
+### Extracting implicits
+
+In order to run the implicit extractor, we need to extract the project
+metadata and generate semanticdb. We have built an SBT plugin that does
+that. Running:
+
+``` sh
+./run.sh make -C corpora/1-example
+```
+
+should do all these tasks including export of the extracted implicits
+from the binary model into CSV files. After the command has run, the
+following files (among others) should be created:
+
+In `_analysis_`:
+
+  - `metadata-modules.csv` – information about project modules
+      - it shows three modules (there is an aggregating root module) and
+        all the version information
+  - `metadata-dependencies.csv` – information about project dependencies
+      - for example the `conversion` module has 11 dependecies out of
+        which 9 are in the test scope and 7 are transitive
+  - `metadata-sourcepaths.csv` – information about projects’ source
+    paths
+      - there are three entries since only `conversion` defines some
+        tests
+      - there are also number of lines of Scala code
+  - `semanticdb.bin` – merged semanticdb files
+  - `implicits.bin` – extracted implicits in google protocol buffer
+    format following our
+    [model](https://github.com/PRL-PRG/scala-implicits-analysis/blob/master/libs/model/src/main/protobuf/model.proto)
+  - `implicits-stats.csv` – stats about how many implicits were
+    extracted
+  - \``implicits-exceptions.csv` – problems encountered when extracting
+    implicits
+
+In root: - `implicit-callsites.csv` – extracted implicit call sites -
+`implicit-declarations.csv` – extracted implicit declarations -
+`implicit-conversions.csv` – extracted implicit conversions -
+`implicit-parameters.csv` – extracted implicit parameters
+
+### Checking the results
+
+Following are the some of the results to be checked.
+
+1.  All the `*-problems.csv` files should be empty as weel as
+    `_analysis_/implicits-exceptions.csv`:
+    
+    ``` sh
+    wc -l corpora/1-example/*-problems.csv corpora/1-example/_analysis_/implicits-exceptions.csv
+    1 implicit-callsites-problems.csv
+    1 implicit-conversions-problems.csv
+    1 implicit-declarations-problems.csv
+    1 implicit-parameters-problems.csv
+    1 _analysis_/implicits-exceptions.csv
+    ```
+    
+    Note:
+    
+      - they should contain 1 line - the CSV header
+
+2.  There should be 7 local implicit declarations:
+    
+      - 3 for `TypeClass.scala`,
+      - 1 for `Conversion.scala`, and
+      - 3 for `Cards.scala`
+    
+    The easiest way to check this is to see how many
+    `implicit_local_declarations` are in
+    `_analysis_/implicits-stats.csv`. Details about each declaration is
+    in `implicit-declarations.csv`, but also include all the implicit
+    declarations from dependencies. One way how to quickly filter is
+    using:
+    
+    ``` sh
+    cat corpora/1-example/implicit-declarations.csv | grep TypeClass.class
+    ```
+    
+    to see declarations defined in the `TypeClass.scala`.
+
+3.  There should be 4 implicit conversions
+    
+    ``` sh
+    ./run.sh Rscript -e 'glue::glue_data(readr::read_csv("corpora/1-example/implicit-conversions.csv"), "- `{declaration_id}`: `{from}` => `{to}`")'
+    ```
+    
+      - `org/scalatest/Matchers#convertToStringShouldWrapper().`:
+        `java/lang/String#` =\>
+        `org/scalatest/Matchers#StringShouldWrapper#`
+      - `example/Conversion.XtensionJson().`:
+        `example/Conversion.XtensionJson().[T]` =\>
+        `example/Conversion.XtensionJson#[example/Conversion.XtensionJson().[T]]`
+      - `example/Cards.iToC().`: `scala/Int#` =\> `example/Cards.Card#`
+      - `example/Cards.dk.`: `scala/Int#` =\> `example/Cards.Card#`
+    
+    This correctly identify the `implcit val dk = List(...)` as implicit
+    conversion as indeed `List[T]` is of a functional type
+    `Function1[Int, T]`.
+
+4.  There should be 5 implicit parameters:
+    
+    ``` sh
+    ./run.sh Rscript -e 'glue::glue_data(readr::read_csv("corpora/1-example/implicit-parameters.csv"), "- `{declaration_id}`")' | grep example
+    ```
+    
+      - `example/TypeClass.seqJsonable().`
+      - `example/TypeClass.asJson().`
+      - `example/TypeClass.seqJsonable().`
+      - `example/Conversion.XtensionJson().`
+      - `example/Cards.Card#isInDeck().`
+
+### Playing with the model
+
+The above CSV files are what we use for the subsequent analysis which is
+done in R. However, the model stored in the `implicits.bin` contains
+much more information. It is possible to access it and query in a Scala
+REPL using ammonite:
+
+``` sh
+./run.sh -C corpora/1-example console
+```
+
+This starts a Scala REPL and provide a function that can load the
+`implcits.bin` file:
+
+``` scala
+@ val project = loadImplicits("_analysis_/implicits.bin")
+```
+
+For example, to get the declarations of the implcit call sites:
+
+``` scala
+@ project.implicitCallSites.map(_.declarationId)
+res2: Iterable[String] = List(
+  "example/TypeClass.seqJsonable().",
+  "example/TypeClass.asJson().",
+  "example/TypeClass.asJson().",
+  "scala/collection/Seq.canBuildFrom().",
+  "scala/collection/TraversableLike#map().",
+  "scala/Predef.implicitly().",
+  "example/Cards.Card#isInDeck().",
+  "example/Conversion.XtensionJson().",
+  "example/TypeClass.seqJsonable().",
+  "org/scalactic/source/Position.apply().",
+...
+```
+
+To get more ideas what to query, please consult the
+[model](https://github.com/PRL-PRG/scala-implicits-analysis/blob/master/libs/model/src/main/protobuf/model.proto).
 
 ## Part 2
 
@@ -282,7 +497,13 @@ TODO: note on parallelism corpora/3-sample-set/jobsfile.txt
 
 ## Part 3
 
-The corpus of all the GitHub Scala projects is available on server at:
+The analysis presented in the paper was done on all Scala projects we
+were able to download from GitHub. The corpus was bootstrapped using
+[GHTorrent](http://ghtorrent-downloads.ewi.tudelft.nl/mysql/mysql-2019-01-01.tar.gz)
+and [scaladex](https://index.scala-lang.org/). From these two sources,
+we extracted projects names (GitHub repository owner and repository
+name) and downloaded them to our server. The corpus of all the GitHub
+Scala projects is available on server at:
 
     http://prl1.ele.fit.cvut.cz:8149/github
 
@@ -296,6 +517,23 @@ The reason why do not create an archive of it is its size:
       - 79GB `cache/ivy`
       - 2GB `cache/sbt/sbt-boot`
 2.  The corpus itself has 1.1TB.
+
+It is possible to replace the results just by downloading the final
+feather files. The download size is about 4.5GB.
+
+``` sh
+./run.sh make -C corpora/4-github fetch
+```
+
+and then running the same reports:
+
+``` sh
+./run.sh make -C corpora/4-github report
+```
+
+Please keep in mind that you will need plenty of RAM to load all the
+data into memory for R to process them. It is possible to fit it into
+16GB RAM if most of it is free.
 
 ## Building image locally
 

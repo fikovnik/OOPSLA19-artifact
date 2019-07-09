@@ -28,6 +28,7 @@ all: fetch report
 
 clean:
 	-rm -f $(REMOTE) $(LOCAL)
+	-rm -fr stage1-analysis_files stage3-analysis_files
 
 fetch: $(LOCAL)
 

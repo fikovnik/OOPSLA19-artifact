@@ -502,41 +502,92 @@ following
 
 ### Overview of the pipeline
 
-  - Stage 1:
+1.  create `all-projects.txt` that contains a new-line separated list of
+    project\_id (`<github-user-name>--<github-repo-name>`) (`status=0`),
+
+The pipeline consists of 3 stages:
+
+1.  Stage
     
-    1.  create `all-projects.txt` that contains a new-line separated
-        list of project\_id (`<github-user-name>--<github-repo-name>`)
-        (`status=0`),
-    2.  download projects into `all-projects` folder and optionally
-        patch them with information in `all-projects-patches.csv`
-        (`status=1`),
-    3.  extract `repo-metadata.csv` that contains basic metadata about
+    This stage downloads projects and extract repository-level metadata
+    to find out which projects are compatible with ScalaMeta (the tool
+    we use to extract semantic information from the Scala source) as
+    well as to filter out duplicates. Especially the last part is
+    important otherwise it would be rather an analysis of Apache Spark
+    clones (Apache Spark is one of the largest Scala project and GitHub
+    includes over 100 copies that are not official forks).
+    
+    1.  download projects into `all-projects` folder and optionally
+        patch them with information in `all-projects-patches.csv`,
+    2.  extract `repo-metadata.csv` that contains basic metadata about
         the repository including scala lines of code, build system and
         optionally SBT version,
-    4.  filter non-empty and SBT compatible projects (projects using SBT
-        \>= 0.13.5 or 1.0) (`status=2`),
-    5.  fetch information from GitHub about all the SBT projects
-    6.  run dejavu
-    7.  create `corpus-stage1.csv` summary
-    8.  run the `stage1-analysis.Rmd` to produce the `projects.txt` file
+    3.  filter non-empty and SBT compatible projects (projects using SBT
+        version 0.13.5+ or 1.0+),
+    4.  fetch information from GitHub about all the SBT projects
+        (project name, GitHub stars, first/last push)
+    5.  run [Dejavu](https://github.com/PRL-PRG/dejavu-artifact) to
+        compute project-level file duplication
+    6.  create `corpus-stage1.csv` summary
+        ([details](https://github.com/PRL-PRG/scala-implicits-analysis/blob/oopsla19/scripts/analysis/stage1-analysis.Rmd#L54))
+        and final list of projects (`projects.txt`) that will go into
+        next stage.
 
-  - Stage 2:
+2.  Stage
     
-    9.  compile all projects
-    10. extract SBT metadata for each project
-    11. extract semanticdb for each project
-
-  - Stage3:
+    This goal in this stage is to find out which projects compile,
+    extract projects’ metadata from SBT and generate semanticdb. It is
+    the longest running and most resource intensive part of the pipeline
+    as this means compiling each project three times. This is inevitable
+    since getting full project dependencies from SBT triggers a full
+    build so does generating the semanticdb. Also, this has been the
+    hardest part to parallelize because SBT and Ivy do create global
+    locks. For each project we therefore have to create a separate
+    separate SBT and Ivy cache which are then linked into a global one.
     
-    10. extract implicits for each project
-    11. merge all the results
-    12. export implicits into CSV files
-    13. create `corpus-stage3.csv` summary
-    14. run the `stage3-analysis.Rmd`
+    The summaries of each step is recorded in both a log file as well as
+    a CSV files which are then merged together allowing one to analyze
+    the results in R.
+    
+    1.  compile all projects
+    2.  extract SBT metadata for each project
+    3.  generate semanticdb for each project
+    4.  merge all semanticdb into one file
 
-All these tasks are run from a `Makefile.corpus` makefile.
+3.  Stage
+    
+    The final stage runs the actual implicit extractor to create
+    `implicits.bin` for the entire corpus, exports that into the CSV
+    files and runs the reports.
+    
+    1.  extract implicits for each project
+    2.  merge all the results
+    3.  export implicits into CSV files
+    4.  create `corpus-stage3.csv` summary
+    5.  run the `stage3-analysis.Rmd` report
+    6.  run the `implicits-analysis.Rmd` report
+
+The entire pipeline is implemented in a number of bash, R and Scala (via
+[Ammonite](http://ammonite.io/#ScalaScripts)) scripts. It is
+orchestrated by two Makefiles: - `Makefile.corpus` – that defines tasks
+corresponding to the above description - `Makefile.project` – that
+defines tasks to be run in each project
+
+For additional details, please refer to Section 3 in the paper.
 
 ### Running the pipeline
+
+In this part we will run the analysis pipeline on a set of 50 Scala
+projects. We have selected these projects randomly from both the
+successfully analyzed and failed projects in the large GitHub corpus
+used for the paper. You can of course tweak the selection of the
+projects simply by editing `all-projects.txt`. To run tasks in parallel
+we use GNU parallel instead of the built-in make ability (`-j` flag).
+The reason is that GNU parallel does much better job at bookkeeping (it
+stores the commands output, errors in separate files and has a global
+log of jobs scheduling).
+
+To run the pipeline on the sample set corpus:
 
 ``` sh
 ./run.sh make -C corpora/3-sample-set
@@ -564,7 +615,7 @@ and 6.
 ### Custom corpus
 
 You are welcome to try it on your favorite Scala projects. To create a
-new corpus, simply create a new directory in `corpra` and do the
+new corpus, simply create a new directory in `corpora` and do the
 following:
 
 ``` sh

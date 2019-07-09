@@ -82,7 +82,7 @@ This guide was tested on Linux and OSX.
 
    ```
    ├── corpora
-   │   ├── 1-example            -- an example project to demonstrate implciti extraction
+   │   ├── 1-example            -- an example project to demonstrate implicit extraction
    │   ├── 2-single             -- a single real-world Scala project to check the pipeline
    │   ├── 3-sample-set         -- a sample set of random Scala projects
    │   └── 4-github             -- placeholder for the entire analyzed repository (not downloaded yet)
@@ -350,7 +350,7 @@ In root:
 
 ### Checking the results
 
-Following are the some of the results to be checked.
+Following are some of the results to be checked.
 
 1. All the `*-problems.csv` files should be empty as weel as `_analysis_/implicits-exceptions.csv`:
 
@@ -391,7 +391,7 @@ Following are the some of the results to be checked.
    - `example/Cards.iToC().: scala/Int# => example/Cards.Card#`
    - `example/Cards.dk.: scala/Int# => example/Cards.Card#`
 
-   This correctly identify the `implcit val dk = List(...)` as implicit conversion as indeed `List[T]` is of a functional type `Function1[Int, T]`.
+   This correctly identify the `implicit val dk = List(...)` as implicit conversion as indeed `List[T]` is of a functional type `Function1[Int, T]`.
 
 1. There should be 5 implicit parameters:
 
@@ -415,13 +415,13 @@ It is possible to access it and query in a Scala REPL using ammonite:
 ./run.sh -C corpora/1-example console
 ```
 
-This starts a Scala REPL and provide a function that can load the `implcits.bin` file:
+This starts a Scala REPL and provides a function that can load the `implicits.bin` file:
 
 ```scala
 @ val project = loadImplicits("_analysis_/implicits.bin")
 ```
 
-For example, to get the declarations of the implcit call sites:
+For example, to get the declarations of the implicit call sites:
 
 ```scala
 @ project.implicitCallSites.map(_.declarationId)
@@ -482,7 +482,7 @@ The pipeline consists of 3 stages:
    It is the longest running and most resource intensive part of the pipeline as this means compiling each project three times.
    This is inevitable since getting full project dependencies from SBT triggers a full build so does generating the semanticdb.
    Also, this has been the hardest part to parallelize because SBT and Ivy do create global locks.
-   For each project we therefore have to create a separate separate SBT and Ivy cache which are then linked into a global one.
+   For each project we therefore have to create a separate SBT and Ivy cache which are then linked into a global one.
 
    The summaries of each step is recorded in both a log file as well as a CSV files which are then merged together allowing one to analyze the results in R.
 

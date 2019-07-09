@@ -28,7 +28,7 @@ The pipeline depends on a number of tools.
 The full requirements are listed in the documentation of the [analysis pipeline itself](https://github.com/PRL-PRG/scala-implicits-analysis/tree/oopsla19#requirements)
 To make it more convenient we have build a docker image that has all these dependencies installed.
 The image is available on [Docker HUB](https://hub.docker.com/r/prlprg/oopsla19-scala).
-This image can be either pulled directly from the Hub or <a href="#building-image-locally">build locally</a>.
+This image can be either pulled directly from the Hub or <a href="#building-image-locally">built locally</a>.
 To run the image, you will need [docker community edition](https://docs.docker.com/install/) version 18+ and bash.
 
 The docker image only includes the dependencies needed to build the pipeline.
@@ -132,7 +132,7 @@ This guide was tested on Linux and OSX.
 
    This includes cloned Scala projects that are part of the corpora (one project for the `2-single` and 50 projects for the `3-sample-set` corpora).
    The projects are already built.
-   Please not that the rest of the pipeline still needs to be run, it is only the project building that will be skipped.
+   Please note that the rest of the pipeline still needs to be run, it is only the project building that will be skipped.
    The download size is 500MB.
 
    ```{sh eval=FALSE}
@@ -342,6 +342,7 @@ In `_analysis_`:
 - ``implicits-exceptions.csv` -- problems encountered when extracting implicits
 
 In root:
+
 - `implicit-callsites.csv`    -- extracted implicit call sites
 - `implicit-declarations.csv` -- extracted implicit declarations
 - `implicit-conversions.csv`  -- extracted implicit conversions
@@ -365,6 +366,7 @@ Following are the some of the results to be checked.
    - they should contain 1 line - the CSV header
 
 1. There should be 7 local implicit declarations:
+
    - 3 for `TypeClass.scala`,
    - 1 for `Conversion.scala`, and
    - 3 for `Cards.scala`
@@ -448,6 +450,7 @@ This set has been created randomly from the entire corpus we have analyzed for t
 
 The analysis pipeline runs in what we refer to as _corpus_.
 A corpus is simply a directory that contains the following file:
+
 - `all-projects.txt`                -- a new-line separated list of project_id (`<github-user-name>--<github-repo-name>`) (`status=0`)
 - `Makefile`                        -- usually a symbolic link to the `scala-implicits-analysis/Makefile.corpus`
 - `all-projects-patches.csv`        -- a file that contains actions to be run on individual projects after they were cloned from GitHub
@@ -461,7 +464,7 @@ If you have them, you can safely remove these files and set `GH_CLIENT_ID/GH_CLI
 
 The pipeline consists of 3 stages:
 
-1. Stage
+#### Stage 1
 
    This stage downloads projects and extract repository-level metadata to find out which projects are compatible with ScalaMeta (the tool we use to extract semantic information from the Scala source) as well as to filter out duplicates.
    Especially the last part is important otherwise it would be rather an analysis of Apache Spark clones (Apache Spark is one of the largest Scala project and GitHub includes over 100 copies that are not official forks).
@@ -473,7 +476,7 @@ The pipeline consists of 3 stages:
    1. run [Dejavu](https://github.com/PRL-PRG/dejavu-artifact) to compute project-level file duplication
    1. create `corpus-stage1.csv` summary ([details](https://github.com/PRL-PRG/scala-implicits-analysis/blob/oopsla19/scripts/analysis/stage1-analysis.Rmd#L54)) and final list of projects (`projects.txt`) that will go into next stage.
 
-1. Stage
+#### Stage 2
 
    This goal in this stage is to find out which projects compile, extract projects' metadata from SBT and generate semanticdb.
    It is the longest running and most resource intensive part of the pipeline as this means compiling each project three times.
@@ -488,7 +491,7 @@ The pipeline consists of 3 stages:
    1. generate semanticdb for each project
    1. merge all semanticdb into one file
 
-3. Stage
+#### Stage 3
 
    The final stage runs the actual implicit extractor to create `implicits.bin` for the entire corpus, exports that into the CSV files and runs the reports.
 
@@ -501,6 +504,7 @@ The pipeline consists of 3 stages:
 
 The entire pipeline is implemented in a number of bash, R and Scala (via [Ammonite](http://ammonite.io/#ScalaScripts)) scripts.
 It is orchestrated by two Makefiles:
+
 - `Makefile.corpus` -- that defines tasks corresponding to the above description
 - `Makefile.project` -- that defines tasks to be run in each project
 

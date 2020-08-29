@@ -1,4 +1,4 @@
-FROM openjdk:8
+FROM openjdk:11
 
 # Install basic requirements
 RUN DEBIAN_FRONTEND=noninteractive \
@@ -17,7 +17,7 @@ RUN DEBIAN_FRONTEND=noninteractive \
     tree
 
 # Install R
-RUN echo "deb http://cloud.r-project.org/bin/linux/debian stretch-cran35/" > /etc/apt/sources.list.d/r.list && \
+RUN echo "deb http://cloud.r-project.org/bin/linux/debian buster-cran40/" > /etc/apt/sources.list.d/r.list && \
     apt-key adv --keyserver keys.gnupg.net --recv-key 'E19F5F87128899B192B1A2C2AD5F960A256A04AF' && \
     DEBIAN_FRONTEND=noninteractive \
     apt-get update -yqq && \
@@ -26,7 +26,7 @@ RUN echo "deb http://cloud.r-project.org/bin/linux/debian stretch-cran35/" > /et
     libcurl4-openssl-dev \
     libssl-dev \
     pandoc \
-    r-base \
+    r-base-core \
     r-base-dev \
     zlib1g-dev
 
